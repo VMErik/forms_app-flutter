@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:forms_app/presentation/blocs/register/register_cubit.dart';
 import 'package:forms_app/presentation/widgets/widgets.dart';
 
 class RegisterScreen extends StatelessWidget {
@@ -10,7 +12,10 @@ class RegisterScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Nuevo Usuario'),
       ),
-      body: const _RegisterView(),
+      body: BlocProvider(
+        create: (context)=> RegisterCubit(),
+        child: const _RegisterView(),  
+      ),
     );
   }
 }
@@ -21,18 +26,18 @@ class _RegisterView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // El textForm field, se relaciona con un formulario
-    return SafeArea(
+    return const SafeArea(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        padding:  EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         // Se recomienda envolver los inputs en este control para que al desplazarse no exista overflow
         child: SingleChildScrollView(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              const FlutterLogo(
+               FlutterLogo(
                 size: 200,
               ),
-              const _RegisterForm(),
+               _RegisterForm(),
             ],
           ),
         ),
@@ -41,74 +46,59 @@ class _RegisterView extends StatelessWidget {
   }
 }
 
-class _RegisterForm extends StatefulWidget {
+class _RegisterForm extends StatelessWidget {
   const _RegisterForm();
 
   @override
-  State<_RegisterForm> createState() => _RegisterFormState();
-}
-
-class _RegisterFormState extends State<_RegisterForm> {
-
-  // Lo utilizamos para tener el contrl del forumlario en el contexto
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-
-  String username ='';
-  String email ='';
-  String password ='';
-
-
-  @override
   Widget build(BuildContext context) {
+
+    final registerCubit = context.watch<RegisterCubit>();
+    // Obtenemos los valores de nuestras propuiedades del estado
+    final username = registerCubit.state.username;
+    final password = registerCubit.state.password;
+    final email = registerCubit.state.email;
+
+
     return Form(
-      key: _formKey,
       child: Column(
         children: [
           CustomTextFormField(
             label: 'Nombre de usuario',
-            onChanged: (value) => username = value,
-            validator: (value){
-              if(value == null || value.isEmpty) return 'Campo Requerido';
-              if(value.trim().isEmpty) return 'Campo Requerido';
-              if(value.length < 6) return 'Longitud minima de 6 caracteres';
-              return null;
-            }
+            onChanged:  (value){
+              // Notificamos el cambio de estado
+              registerCubit.usernameChanged(value);
+            },
+            errorMessage: username.errorMessage
           ),
           const SizedBox(height: 10,),
           CustomTextFormField(
             label: 'Correo electronico',
-            onChanged: (value) => email = value,
-            validator: (value){
-              if(value == null || value.isEmpty) return 'Campo Requerido';
-              if(value.trim().isEmpty) return 'Campo Requerido';
-              final emailRegExp = RegExp(
-                                    r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                                  );
-              if(!emailRegExp.hasMatch(value)) return 'Correo no tiene formato correcto';
-              return null;
-            }
+            onChanged:(value){
+              // Notificamos el cambio de estado
+              registerCubit.emailChanged(value);
+            },
+            errorMessage: email.errorMessage,
           ),
           const SizedBox(height: 10,),
 
           CustomTextFormField(
             label: 'Contraseña',
             obscureText: true,
-            onChanged: (value) => password = value,
-              validator: (value){
-              if(value == null || value.isEmpty) return 'Campo Requerido';
-              if(value.trim().isEmpty) return 'Campo Requerido';
-              if(value.length < 6) return 'Longitud minima de 6 caracteres';
-              return null;
-            }
+            onChanged:(value){
+              // Notificamos el cambio de estado
+              registerCubit.passwordChanged(value);
+            },
+             errorMessage: password.errorMessage,
           ),
           const SizedBox(
             height: 20,
           ),
           FilledButton.tonalIcon(
               onPressed: () {
-                final isValid = _formKey.currentState!.validate();
-                if(!isValid) return;
-                print('$username , $email , $password');
+                // final isValid = _formKey.currentState!.validate();
+                // if(!isValid) return;
+                // Mandamos el submit en nuestro cubit
+                registerCubit.onSubmit();
               },
               
               icon: const Icon(Icons.save),
